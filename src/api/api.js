@@ -30,9 +30,7 @@ export async function fetchLeads({
   from,
   to,
   model = "all",
-  source = "all",
-  status = "all",
-  tags = ""
+  source = "all"
 } = {}) {
   if (!API_URL) {
     throw new Error("REACT_APP_API_URL is not configured");
@@ -44,9 +42,7 @@ export async function fetchLeads({
     quality,
     search,
     model,
-    source,
-    status,
-    tags
+    source
   };
 
   if (from) {

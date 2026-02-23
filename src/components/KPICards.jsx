@@ -25,7 +25,7 @@ const KPICards = ({ kpi, loading }) => {
     total_leads_prev,
     conversion_prev,
     high_potential_pct_prev,
-    quality_leads_prev
+    quality_leads_prev,
   } = kpi || {};
 
   const calcDelta = (current, previous) => {

@@ -1,5 +1,6 @@
 import React from "react";
 import {
+  ResponsiveContainer,
   PieChart,
   Pie,
   Cell,
@@ -8,22 +9,34 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  Legend,
-  ResponsiveContainer,
   CartesianGrid,
-  FunnelChart,
-  Funnel,
-  LabelList,
-  AreaChart,
-  Area
+  Legend,
 } from "recharts";
 
 const QUALITY_COLORS = {
   высокий: "#22c55e",
-  хороший: "#0ea5e9",
-  средний: "#eab308",
-  низкий: "#f97316"
+  хороший: "#16a34a",
+  средний: "#facc15",
+  низкий: "#f97316",
 };
+
+const ChartArea = ({ loading, dataLength, children }) => (
+  <div className="h-80">
+    {loading ? (
+      <div className="flex h-full items-center justify-center text-sm text-slate-400">
+        Загрузка данных...
+      </div>
+    ) : dataLength === 0 ? (
+      <div className="flex h-full items-center justify-center text-sm text-slate-400">
+        Недостаточно данных
+      </div>
+    ) : (
+      <ResponsiveContainer width="100%" height="100%">
+        {children}
+      </ResponsiveContainer>
+    )}
+  </div>
+);
 
 const Charts = ({ aggregations, loading }) => {
   if (!aggregations && !loading) return null;
@@ -32,358 +45,202 @@ const Charts = ({ aggregations, loading }) => {
     by_quality = [],
     by_model = [],
     by_date = [],
-    funnel = [],
-    by_model_detailed = []
   } = aggregations || {};
 
-  // Данные для Pie — распределение по качеству
-  const pieData = by_quality.filter((item) => item.count > 0);
+  const pieData = by_quality.filter((q) => q.count > 0);
 
-  // Данные для Bar по моделям — top 10
-  const modelsData = by_model.slice(0, 10);
+  const modelsData = [...by_model]
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
 
-  // Для временного ряда делаем stacked bars по качеству,
-  // используя структуру объекта: { date, total, высокий, хороший, средний, низкий }
   const timeSeriesData = by_date;
 
-  // Топ / антитоп по моделям (используем детализированные данные
-  // с полями count и quality_pct)
-  const detailedModels = by_model_detailed.length ? by_model_detailed : by_model;
-  const sortedByCount = [...detailedModels].sort((a, b) => (b.count || 0) - (a.count || 0));
-  const sortedByQualityPct = [...detailedModels].sort(
-    (a, b) => (b.quality_pct || 0) - (a.quality_pct || 0)
-  );
-  const topByCount = sortedByCount.slice(0, 5);
-  const bottomByCount = sortedByCount.slice(-5).reverse();
-  const topByQuality = sortedByQualityPct.slice(0, 5);
-  const bottomByQuality = sortedByQualityPct.slice(-5).reverse();
-
   return (
-    <div className="grid gap-4 lg:grid-cols-2 mb-6">
-      {/* Pie: распределение качества */}
-      <div className="card p-4 flex flex-col">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-sm font-semibold text-slate-700">
-            Распределение по качеству лидов
+    <div className="space-y-6 mb-6">
+      {/* ===================== */}
+      {/* TOP BLOCK */}
+      {/* ===================== */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* PIE — Качество */}
+        <div className="card p-4">
+          <h2 className="mb-2 text-sm font-semibold text-slate-700">
+            Распределение качества лидов
           </h2>
-        </div>
-        <div className="h-64">
-          {loading ? (
-            <div className="flex h-full items-center justify-center text-sm text-slate-400">
-              Загрузка данных для графика...
-            </div>
-          ) : pieData.length === 0 ? (
-            <div className="flex h-full items-center justify-center text-sm text-slate-400">
-              Недостаточно данных для графика
-            </div>
-          ) : (
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  dataKey="count"
-                  nameKey="quality"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={90}
-                  label
-                >
-                  {pieData.map((entry) => (
-                    <Cell
-                      key={entry.quality}
-                      fill={QUALITY_COLORS[entry.quality] || "#64748b"}
-                    />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          )}
-        </div>
-      </div>
 
-      {/* Bar: лиды по моделям (горизонтальный) */}
-      <div className="card p-4 flex flex-col">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-sm font-semibold text-slate-700">
-            Лиды по моделям Kia (top 10)
-          </h2>
-        </div>
-        <div className="h-64">
-          {loading ? (
-            <div className="flex h-full items-center justify-center text-sm text-slate-400">
-              Загрузка данных для графика...
-            </div>
-          ) : modelsData.length === 0 ? (
-            <div className="flex h-full items-center justify-center text-sm text-slate-400">
-              Недостаточно данных для графика
-            </div>
-          ) : (
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={modelsData}
-                layout="vertical"
-                margin={{ left: 80, right: 24, top: 10, bottom: 10 }}
+          <ChartArea loading={loading} dataLength={pieData.length}>
+            <PieChart>
+              <Pie
+                data={pieData}
+                dataKey="count"
+                nameKey="quality"
+                cx="50%"
+                cy="50%"
+                innerRadius={45}
+                outerRadius={85}
               >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" />
-                <YAxis dataKey="model" type="category" width={80} />
-                <Tooltip />
-                <Bar dataKey="count" fill="#3b82f6" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-        </div>
-      </div>
-
-      {/* Stacked Time Series: лиды за последние 30 дней по качеству */}
-      <div className="card p-4 flex flex-col lg:col-span-2">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-sm font-semibold text-slate-700">
-            Лиды за последние 30 дней (по качеству)
-          </h2>
-        </div>
-        <div className="h-72">
-          {loading ? (
-            <div className="flex h-full items-center justify-center text-sm text-slate-400">
-              Загрузка данных для графика...
-            </div>
-          ) : timeSeriesData.length === 0 ? (
-            <div className="flex h-full items-center justify-center text-sm text-slate-400">
-              Недостаточно данных для графика
-            </div>
-          ) : (
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={timeSeriesData} margin={{ left: 0, right: 24 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar
-                  dataKey="высокий"
-                  stackId="a"
-                  fill={QUALITY_COLORS["высокий"]}
-                />
-                <Bar
-                  dataKey="хороший"
-                  stackId="a"
-                  fill={QUALITY_COLORS["хороший"]}
-                />
-                <Bar
-                  dataKey="средний"
-                  stackId="a"
-                  fill={QUALITY_COLORS["средний"]}
-                />
-                <Bar
-                  dataKey="низкий"
-                  stackId="a"
-                  fill={QUALITY_COLORS["низкий"]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-        </div>
-      </div>
-
-      {/* Воронка качества лидов */}
-      <div className="card p-4 flex flex-col">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-100">
-            Воронка качества лидов
-          </h2>
-        </div>
-        <div className="h-64">
-          {loading ? (
-            <div className="flex h-full items-center justify-center text-sm text-slate-400">
-              Загрузка данных для воронки...
-            </div>
-          ) : !funnel || funnel.length === 0 ? (
-            <div className="flex h-full items-center justify-center text-sm text-slate-400">
-              Недостаточно данных для построения воронки
-            </div>
-          ) : (
-            <ResponsiveContainer width="100%" height="100%">
-              <FunnelChart>
-                <Tooltip />
-                <Funnel
-                  dataKey="count"
-                  data={funnel}
-                  isAnimationActive={false}
-                >
-                  <LabelList
-                    dataKey="stage"
-                    position="right"
-                    fill="#0f172a"
-                    stroke="none"
+                {pieData.map((entry) => (
+                  <Cell
+                    key={entry.quality}
+                    fill={QUALITY_COLORS[entry.quality] || "#94a3b8"}
                   />
-                </Funnel>
-              </FunnelChart>
-            </ResponsiveContainer>
-          )}
+                ))}
+              </Pie>
+              <Tooltip />
+              <Legend
+                verticalAlign="bottom"
+                iconType="circle"
+                wrapperStyle={{ fontSize: 12 }}
+              />
+            </PieChart>
+          </ChartArea>
+        </div>
+
+        {/* BAR — Модели */}
+        <div className="card p-4">
+          <h2 className="mb-2 text-sm font-semibold text-slate-700">
+            Лиды по моделям автомобилей
+          </h2>
+
+          <ChartArea loading={loading} dataLength={modelsData.length}>
+            <BarChart data={modelsData}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="model" tick={{ fontSize: 11 }} />
+              <YAxis allowDecimals={false} />
+              <Tooltip />
+              <Bar dataKey="count" fill="#22c55e" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ChartArea>
         </div>
       </div>
 
-      {/* Stacked Area: динамика качества во времени */}
-      <div className="card p-4 flex flex-col">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-100">
-            Динамика качества во времени
-          </h2>
-        </div>
-        <div className="h-64">
-          {loading ? (
-            <div className="flex h-full items-center justify-center text-sm text-slate-400">
-              Загрузка данных...
-            </div>
-          ) : timeSeriesData.length === 0 ? (
-            <div className="flex h-full items-center justify-center text-sm text-slate-400">
-              Недостаточно данных для графика
-            </div>
-          ) : (
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart
-                data={timeSeriesData}
-                margin={{ left: 0, right: 24 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Area
-                  type="monotone"
-                  dataKey="высокий"
-                  stackId="a"
-                  stroke={QUALITY_COLORS["высокий"]}
-                  fill={QUALITY_COLORS["высокий"]}
-                  fillOpacity={0.5}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="хороший"
-                  stackId="a"
-                  stroke={QUALITY_COLORS["хороший"]}
-                  fill={QUALITY_COLORS["хороший"]}
-                  fillOpacity={0.5}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="средний"
-                  stackId="a"
-                  stroke={QUALITY_COLORS["средний"]}
-                  fill={QUALITY_COLORS["средний"]}
-                  fillOpacity={0.5}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="низкий"
-                  stackId="a"
-                  stroke={QUALITY_COLORS["низкий"]}
-                  fill={QUALITY_COLORS["низкий"]}
-                  fillOpacity={0.5}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          )}
-        </div>
+      {/* ===================== */}
+      {/* BOTTOM BLOCK */}
+      {/* ===================== */}
+      <div className="card p-4">
+        <h2 className="mb-3 text-sm font-semibold text-slate-700">
+          Статистика лидов (по качеству)
+        </h2>
+
+        <ChartArea loading={loading} dataLength={timeSeriesData.length}>
+          <BarChart data={timeSeriesData}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+            <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+            <YAxis allowDecimals={false} />
+            <Tooltip />
+            <Legend wrapperStyle={{ fontSize: 12 }} />
+            <Bar
+              dataKey="высокий"
+              stackId="a"
+              fill={QUALITY_COLORS["высокий"]}
+            />
+            <Bar
+              dataKey="хороший"
+              stackId="a"
+              fill={QUALITY_COLORS["хороший"]}
+            />
+            <Bar
+              dataKey="средний"
+              stackId="a"
+              fill={QUALITY_COLORS["средний"]}
+            />
+            <Bar
+              dataKey="низкий"
+              stackId="a"
+              fill={QUALITY_COLORS["низкий"]}
+            />
+          </BarChart>
+        </ChartArea>
       </div>
 
-      {/* Топ / Антитоп моделей */}
-      <div className="card p-4 flex flex-col lg:col-span-2">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-100">
-            Топ / Антитоп моделей
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* ===================== */}
+        {/* СТАТИСТИКА КАЧЕСТВА */}
+        {/* ===================== */}
+        <div className="card p-4">
+          <h2 className="mb-4 text-sm font-semibold text-slate-700">
+            Статистика качества
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Слева — по количеству, справа — по % качественных лидов
-          </p>
+
+          <div className="space-y-3">
+            {by_quality.map((q) => {
+              const total = by_quality.reduce((s, i) => s + i.count, 0);
+              const percent = total ? (q.count / total) * 100 : 0;
+
+              return (
+                <div key={q.quality}>
+                  <div className="mb-1 flex justify-between text-sm">
+                    <span>{q.quality}</span>
+                    <span className="text-slate-500">{q.count}</span>
+                  </div>
+                  <div className="h-2 w-full rounded bg-slate-100">
+                    <div
+                      className="h-2 rounded"
+                      style={{
+                        width: `${percent}%`,
+                        background:
+                          q.quality === "высокий"
+                            ? "#22c55e"
+                            : q.quality === "хороший"
+                            ? "#16a34a"
+                            : q.quality === "средний"
+                            ? "#facc15"
+                            : "#f97316",
+                      }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
-        {loading ? (
-          <div className="flex h-32 items-center justify-center text-sm text-slate-400">
-            Загрузка данных по моделям...
-          </div>
-        ) : detailedModels.length === 0 ? (
-          <div className="flex h-32 items-center justify-center text-sm text-slate-400">
-            Недостаточно данных
-          </div>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2 text-sm">
-            <div>
-              <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                Топ-5 по количеству
-              </h3>
-              <ul className="space-y-1">
-                {topByCount.map((m) => (
-                  <li
-                    key={m.model}
-                    className="flex items-center justify-between rounded-md bg-slate-50 px-3 py-1 dark:bg-slate-800"
-                  >
-                    <span>{m.model}</span>
-                    <span className="text-xs text-slate-600 dark:text-slate-300">
-                      {m.count} лидов
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              <h3 className="mt-3 mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                Антитоп-5 по количеству
-              </h3>
-              <ul className="space-y-1">
-                {bottomByCount.map((m) => (
-                  <li
-                    key={m.model}
-                    className="flex items-center justify-between rounded-md bg-slate-50 px-3 py-1 dark:bg-slate-800"
-                  >
-                    <span>{m.model}</span>
-                    <span className="text-xs text-slate-600 dark:text-slate-300">
-                      {m.count} лидов
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                Топ-5 по % качественных
-              </h3>
-              <ul className="space-y-1">
-                {topByQuality.map((m) => (
-                  <li
-                    key={m.model}
-                    className="flex items-center justify-between rounded-md bg-slate-50 px-3 py-1 dark:bg-slate-800"
-                  >
-                    <span>{m.model}</span>
-                    <span className="text-xs text-slate-600 dark:text-slate-300">
-                      {Math.round((m.quality_pct || 0) * 100)}% качественных
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              <h3 className="mt-3 mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                Антитоп-5 по % качественных
-              </h3>
-              <ul className="space-y-1">
-                {bottomByQuality.map((m) => (
-                  <li
-                    key={m.model}
-                    className="flex items-center justify-between rounded-md bg-slate-50 px-3 py-1 dark:bg-slate-800"
-                  >
-                    <span>{m.model}</span>
-                    <span className="text-xs text-slate-600 dark:text-slate-300">
-                      {Math.round((m.quality_pct || 0) * 100)}% качественных
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        )}
+
+        {/* ===================== */}
+        {/* КЛЮЧЕВЫЕ МЕТРИКИ */}
+        {/* ===================== */}
+        <div className="card p-4">
+          <h2 className="mb-4 text-sm font-semibold text-slate-700">
+            Ключевые метрики
+          </h2>
+
+          {(() => {
+            const total = by_quality.reduce((s, i) => s + i.count, 0);
+            const high =
+              by_quality.find((i) => i.quality === "высокий")?.count || 0;
+            const good =
+              by_quality.find((i) => i.quality === "хороший")?.count || 0;
+
+            const conversion = total
+              ? Math.round(((high + good) / total) * 100)
+              : 0;
+            const highPotential = total ? Math.round((high / total) * 100) : 0;
+
+            const bestDay = [...by_date].sort((a, b) => b.total - a.total)[0];
+
+            return (
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span>Общая конверсия</span>
+                  <strong>{conversion}%</strong>
+                </div>
+                <div className="flex justify-between">
+                  <span>Высокий потенциал</span>
+                  <strong>{highPotential}%</strong>
+                </div>
+                <div className="flex justify-between">
+                  <span>Максимум заявок за день</span>
+                  <strong>{bestDay?.total || 0}</strong>
+                </div>
+                <div className="flex justify-between">
+                  <span>Лучший день</span>
+                  <strong>{bestDay?.date || "—"}</strong>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
       </div>
     </div>
   );
 };
 
 export default Charts;
-

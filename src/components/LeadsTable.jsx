@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { format } from "date-fns";
-import { updateLeadStatus, updateLeadTags } from "../api/api";
+import { fetchLeads } from "../api/api";
 
 const QUALITY_LABEL_CLASS = {
   высокий: "badge badge-high",
@@ -34,7 +34,6 @@ const LeadsTable = ({
 }) => {
   const [sortField, setSortField] = useState("datetime");
   const [sortDirection, setSortDirection] = useState("desc");
-  const [updatingId, setUpdatingId] = useState(null);
   const currentPage = Math.floor(offset / limit) + 1;
   const totalPages = Math.max(1, Math.ceil((total || 0) / limit));
 
@@ -95,51 +94,78 @@ const LeadsTable = ({
     });
   };
 
-  const handleStatusChange = async (lead, newStatus) => {
-    setUpdatingId(lead.id);
-    try {
-      await updateLeadStatus(lead.id, newStatus);
-      // оптимистично обновляем локально
-      lead.lead_status = newStatus;
-    } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error(err);
-      window.alert("Не удалось обновить статус лида.");
-    } finally {
-      setUpdatingId(null);
-    }
-  };
-
-  const handleTagsBlur = async (lead, e) => {
-    const newTags = e.target.value;
-    setUpdatingId(lead.id);
-    try {
-      await updateLeadTags(lead.id, newTags);
-      lead.tags = newTags;
-    } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error(err);
-      window.alert("Не удалось обновить теги.");
-    } finally {
-      setUpdatingId(null);
-    }
-  };
+  const buildCsvRows = (sourceLeads) =>
+    (sourceLeads || []).map((lead) => ({
+      id: lead.id,
+      datetime: lead.datetime,
+      name: lead.name,
+      city: lead.city,
+      selected_car: lead.selected_car,
+      purchase_method: lead.purchase_method,
+      client_quality: lead.client_quality,
+      traffic_source: lead.traffic_source,
+      messenger: lead.messenger,
+      dealer_center: lead.dealer_center,
+      dialog_link: lead.dialog_link,
+      summary_dialog: lead.summary_dialog,
+      source_system: lead.source_system,
+      platform_user_id: lead.platform_user_id
+    }));
 
   const exportToCsv = async (fullPeriod = false) => {
-    const rows = (fullPeriod ? [] : sortedLeads).map((lead) => ({
-      id: lead.id,
-      client_name: lead.client_name,
-      phone: lead.phone,
-      summary: lead.summary,
-      car_model: lead.car_model,
-      lead_quality: lead.lead_quality,
-      datetime: lead.datetime,
-      source: lead.source,
-      lead_status: lead.lead_status,
-      tags: lead.tags
-    }));
+    let sourceLeads = sortedLeads;
+
+    // При экспорте "за период" запрашиваем все данные у API с теми же фильтрами,
+    // игнорируя пагинацию, чтобы экспортировать полную выборку.
+    if (fullPeriod) {
+      try {
+        const pageLimit = 500;
+        let allLeads = [];
+        let pageOffset = 0;
+        // Пагинация, пока бэкенд возвращает полные страницы
+        // (Apps Script сам ограничит максимальный объем, если нужно).
+        // Если данных меньше, чем pageLimit, останавливаемся.
+        // Это проще и надежнее отдельного спец. эндпоинта.
+        // В дальнейшем можно вынести в отдельный хук/утилиту.
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+          const data = await fetchLeads({
+            limit: pageLimit,
+            offset: pageOffset,
+            quality: filters.quality,
+            search: filters.search,
+            from: filters.from || undefined,
+            to: filters.to || undefined,
+            model: filters.model,
+            source: filters.source
+          });
+
+          const batch = data.leads || [];
+          allLeads = allLeads.concat(batch);
+
+          if (batch.length < pageLimit) {
+            break;
+          }
+
+          pageOffset += pageLimit;
+        }
+
+        sourceLeads = allLeads;
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error("Ошибка экспорта за период", error);
+        window.alert("Не удалось загрузить данные для экспорта за период.");
+        return;
+      }
+    }
+
+    const rows = buildCsvRows(sourceLeads);
     if (rows.length === 0) {
-      window.alert("Нет данных для экспорта.");
+      window.alert(
+        fullPeriod
+          ? "Нет данных за выбранный период для экспорта."
+          : "Нет данных для экспорта."
+      );
       return;
     }
     const header = Object.keys(rows[0]);
@@ -239,23 +265,21 @@ const LeadsTable = ({
             <tr>
               <th
                 className="px-3 py-2 text-left cursor-pointer"
-                onClick={() => changeSort("client_name")}
+                onClick={() => changeSort("name")}
                 title="Сортировать по имени"
               >
                 Имя
               </th>
-              <th className="px-3 py-2 text-left">Телефон</th>
-              <th className="px-3 py-2 text-left">Резюме</th>
               <th
                 className="px-3 py-2 text-left cursor-pointer"
-                onClick={() => changeSort("car_model")}
+                onClick={() => changeSort("selected_car")}
                 title="Сортировать по модели"
               >
                 Модель
               </th>
               <th
                 className="px-3 py-2 text-left cursor-pointer"
-                onClick={() => changeSort("lead_quality")}
+                onClick={() => changeSort("client_quality")}
                 title="Сортировать по качеству"
               >
                 Качество
@@ -267,8 +291,9 @@ const LeadsTable = ({
               >
                 Дата
               </th>
-              <th className="px-3 py-2 text-left">Статус</th>
-              <th className="px-3 py-2 text-left">Теги</th>
+              <th className="px-3 py-2 text-left">Город</th>
+              <th className="px-3 py-2 text-left">Источник</th>
+              <th className="px-3 py-2 text-left">Канал</th>
               <th className="px-3 py-2 text-right">Действия</th>
             </tr>
           </thead>
@@ -285,59 +310,40 @@ const LeadsTable = ({
             ) : sortedLeads && sortedLeads.length > 0 ? (
               sortedLeads.map((lead) => {
                 const qualityClass =
-                  QUALITY_LABEL_CLASS[lead.lead_quality] ||
+                  QUALITY_LABEL_CLASS[lead.client_quality_bucket] ||
                   "badge bg-slate-100 text-slate-700";
                 const qualityStripeClass =
-                  lead.lead_quality === "высокий"
+                  lead.client_quality_bucket === "высокий"
                     ? "border-l-4 border-emerald-500"
-                    : lead.lead_quality === "хороший"
+                    : lead.client_quality_bucket === "хороший"
                     ? "border-l-4 border-sky-500"
-                    : lead.lead_quality === "средний"
+                    : lead.client_quality_bucket === "средний"
                     ? "border-l-4 border-amber-500"
                     : "border-l-4 border-rose-500";
                 return (
                   <tr key={lead.id} className={`table-row ${qualityStripeClass}`}>
                     <td className="px-3 py-2 whitespace-nowrap text-sm text-slate-800">
-                      {lead.client_name}
+                      {lead.name}
                     </td>
                     <td className="px-3 py-2 whitespace-nowrap text-sm text-slate-700">
-                      {lead.phone}
-                    </td>
-                    <td className="px-3 py-2 text-sm text-slate-700 max-w-xs truncate">
-                      {lead.summary}
-                    </td>
-                    <td className="px-3 py-2 whitespace-nowrap text-sm text-slate-700">
-                      {lead.car_model}
+                      {lead.selected_car}
                     </td>
                     <td className="px-3 py-2 whitespace-nowrap">
-                      <span className={qualityClass}>{lead.lead_quality}</span>
+                      <span className={qualityClass}>
+                        {lead.client_quality_bucket} ({lead.client_quality})
+                      </span>
                     </td>
                     <td className="px-3 py-2 whitespace-nowrap text-sm text-slate-700">
                       {formatDate(lead.datetime)}
                     </td>
-                    <td className="px-3 py-2 whitespace-nowrap text-xs text-slate-700">
-                      <select
-                        value={lead.lead_status || "новый"}
-                        onChange={(e) =>
-                          handleStatusChange(lead, e.target.value)
-                        }
-                        disabled={updatingId === lead.id}
-                        className="rounded-md border border-slate-200 px-2 py-1 text-xs shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100"
-                      >
-                        <option value="новый">Новый</option>
-                        <option value="в работе">В работе</option>
-                        <option value="обработан">Обработан</option>
-                        <option value="отказ">Отказ</option>
-                      </select>
+                    <td className="px-3 py-2 whitespace-nowrap text-sm text-slate-700">
+                      {lead.city}
                     </td>
-                    <td className="px-3 py-2 text-xs text-slate-700">
-                      <input
-                        type="text"
-                        defaultValue={lead.tags || ""}
-                        onBlur={(e) => handleTagsBlur(lead, e)}
-                        placeholder="акция, тест..."
-                        className="w-32 rounded-md border border-slate-200 px-2 py-1 text-xs shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100"
-                      />
+                    <td className="px-3 py-2 whitespace-nowrap text-sm text-slate-700">
+                      {lead.traffic_source}
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap text-sm text-slate-700">
+                      {lead.messenger}
                     </td>
                     <td className="px-3 py-2 text-right">
                       <button

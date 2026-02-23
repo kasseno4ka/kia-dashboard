@@ -90,14 +90,14 @@ const Dashboard = () => {
         </div>
       )}
 
-      <GlobalFiltersBar
+      {/* <GlobalFiltersBar
         filters={filters}
         onChange={handleFilterChange}
         onReset={resetFilters}
         presets={presets}
         onSavePreset={savePreset}
         onLoadPreset={loadPreset}
-      />
+      /> */}
 
       <KPICards kpi={aggregations?.kpi} loading={loading} />
       <Charts aggregations={aggregations} loading={loading} />

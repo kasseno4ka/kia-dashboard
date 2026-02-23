@@ -22,8 +22,14 @@ function formatDateTime(value) {
 const LeadModal = ({ lead, onClose }) => {
   if (!lead) return null;
 
+  // Вся витрина (таблица, экспорт, модалка) работает с одним DTO:
+  // name, selected_car, client_quality_bucket, client_quality, datetime, city,
+  // traffic_source, messenger, dealer_center, dialog_link, summary_dialog,
+  // source_system, platform_user_id и т.д.
+  // Поэтому здесь используем те же поля, что и в таблице/экспорте.
   const qualityClass =
-    QUALITY_LABEL_CLASS[lead.lead_quality] || "badge bg-slate-100 text-slate-700";
+    QUALITY_LABEL_CLASS[lead.client_quality_bucket] ||
+    "badge bg-slate-100 text-slate-700";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40">
@@ -48,72 +54,90 @@ const LeadModal = ({ lead, onClose }) => {
         <div className="px-6 py-4 space-y-4">
           <div className="flex flex-wrap gap-2 items-center">
             <span className="text-sm font-medium text-slate-700">
-              {lead.client_name}
+              {lead.name}
             </span>
-            <span className={qualityClass}>{lead.lead_quality}</span>
-            {lead.car_model && (
+            <span className={qualityClass}>
+              {lead.client_quality_bucket}{" "}
+              {lead.client_quality && `(${lead.client_quality})`}
+            </span>
+            {lead.selected_car && (
               <span className="badge bg-slate-100 text-slate-700">
-                {lead.car_model}
+                {lead.selected_car}
               </span>
             )}
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <p className="text-xs font-medium text-slate-500 mb-1">Телефон</p>
-              <p className="text-sm text-slate-800">{lead.phone || "Не указан"}</p>
+              <p className="text-xs font-medium text-slate-500 mb-1">Город</p>
+              <p className="text-sm text-slate-800">{lead.city || "—"}</p>
             </div>
             <div>
               <p className="text-xs font-medium text-slate-500 mb-1">Источник</p>
               <p className="text-sm text-slate-800">
-                {lead.source || "—"}
+                {lead.traffic_source || "—"}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-slate-500 mb-1">Канал</p>
+              <p className="text-sm text-slate-800">
+                {lead.messenger || "—"}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-slate-500 mb-1">
+                Дилерский центр
+              </p>
+              <p className="text-sm text-slate-800">
+                {lead.dealer_center || "—"}
               </p>
             </div>
             <div className="sm:col-span-2">
               <p className="text-xs font-medium text-slate-500 mb-1">Резюме</p>
               <p className="text-sm text-slate-800 whitespace-pre-wrap">
-                {lead.summary || "—"}
+                {lead.summary_dialog || "—"}
               </p>
             </div>
-            {lead.details_url && (
+            {lead.dialog_link && (
               <div className="sm:col-span-2">
                 <p className="text-xs font-medium text-slate-500 mb-1">
-                  Ссылка на CRM
+                  Ссылка на диалог / CRM
                 </p>
                 <a
-                  href={lead.details_url}
+                  href={lead.dialog_link}
                   target="_blank"
                   rel="noreferrer"
                   className="text-sm text-primary-600 hover:underline break-all"
                 >
-                  {lead.details_url}
+                  {lead.dialog_link}
                 </a>
+              </div>
+            )}
+            {(lead.source_system || lead.platform_user_id) && (
+              <div className="sm:col-span-2 grid gap-3 sm:grid-cols-2">
+                <div>
+                  <p className="text-xs font-medium text-slate-500 mb-1">
+                    Система-источник
+                  </p>
+                  <p className="text-sm text-slate-800">
+                    {lead.source_system || "—"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-slate-500 mb-1">
+                    ID в платформе
+                  </p>
+                  <p className="text-sm text-slate-800">
+                    {lead.platform_user_id || "—"}
+                  </p>
+                </div>
               </div>
             )}
           </div>
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-6 py-3">
-          <div className="flex gap-2">
-            {lead.phone && lead.phone !== "Не указан" && (
-              <a
-                href={`tel:${lead.phone}`}
-                className="inline-flex items-center rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700"
-              >
-                Позвонить
-              </a>
-            )}
-            {lead.details_url && (
-              <a
-                href={lead.details_url}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center rounded-md border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-              >
-                Открыть в CRM
-              </a>
-            )}
-          </div>
+          <div className="flex gap-2" />
           <button
             onClick={onClose}
             className="text-xs text-slate-500 hover:text-slate-700"
