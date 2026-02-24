@@ -377,7 +377,7 @@ const LeadsTable = ({
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto overflow-y-visible">
           <table className="min-w-full text-sm">
             <thead className="table-header sticky top-0 z-10">
               <tr>
@@ -400,7 +400,23 @@ const LeadsTable = ({
                   onClick={() => changeSort("client_quality")}
                   title="Сортировать по качеству"
                 >
-                  Качество
+                  <div className="relative inline-flex items-center gap-1 group">
+                    <span>Качество</span>
+                    <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-slate-300 text-[10px] font-semibold text-slate-500 dark:border-slate-600 dark:text-slate-300">
+                      i
+                    </span>
+                    <div className="pointer-events-none absolute left-1/2 top-full z-30 w-96 -translate-x-1/2 mt-2 invisible opacity-0 transition duration-150 group-hover:visible group-hover:opacity-100">
+                      <div className="rounded-lg bg-slate-900 px-4 py-3 text-xs text-slate-100 shadow-xl dark:bg-slate-950">
+                        <ul className="mt-2 space-y-1 text-slate-200">
+                          <li>• 0–10 баллов: Клиент не ответил ни на один вопрос или игнорирует менеджера.</li>
+                          <li>• 11–30 баллов: Односложные ответы без инициативы («ясно», «подумаю», «нет»).</li>
+                          <li>• 31–60 баллов: Клиент идет на контакт и отвечает на вопросы, но сам ничего не спрашивает.</li>
+                          <li>• 61–90 баллов: Явные сигналы к покупке (встречные вопросы о цене, сроках, условиях или гарантиях).</li>
+                          <li>• 91–100 баллов: Клиент согласился на созвон, оставил контакты для связи или запросил счет.</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
                 </th>
                 <th
                   className="px-3 py-2 text-left cursor-pointer"
