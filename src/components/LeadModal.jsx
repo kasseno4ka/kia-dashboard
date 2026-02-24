@@ -33,19 +33,19 @@ const LeadModal = ({ lead, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40">
-      <div className="card w-full max-w-xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+      <div className="card w-full max-w-xl max-h-[90vh] overflow-y-auto dark:bg-slate-800 dark:border-slate-700">
+        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 dark:border-slate-700">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
               Карточка лида
             </h2>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               ID: {lead.id} • {formatDateTime(lead.datetime)}
             </p>
           </div>
           <button
             onClick={onClose}
-            className="rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
+            className="rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700"
           >
             Закрыть
           </button>
@@ -53,7 +53,7 @@ const LeadModal = ({ lead, onClose }) => {
 
         <div className="px-6 py-4 space-y-4">
           <div className="flex flex-wrap gap-2 items-center">
-            <span className="text-sm font-medium text-slate-700">
+            <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
               {lead.name}
             </span>
             <span className={qualityClass}>
@@ -61,7 +61,7 @@ const LeadModal = ({ lead, onClose }) => {
               {lead.client_quality && `(${lead.client_quality})`}
             </span>
             {lead.selected_car && (
-              <span className="badge bg-slate-100 text-slate-700">
+              <span className="badge bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-100">
                 {lead.selected_car}
               </span>
             )}
@@ -69,38 +69,38 @@ const LeadModal = ({ lead, onClose }) => {
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <p className="text-xs font-medium text-slate-500 mb-1">Город</p>
-              <p className="text-sm text-slate-800">{lead.city || "—"}</p>
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Город</p>
+              <p className="text-sm text-slate-800 dark:text-slate-200">{lead.city || "—"}</p>
             </div>
             <div>
-              <p className="text-xs font-medium text-slate-500 mb-1">Источник</p>
-              <p className="text-sm text-slate-800">
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Источник</p>
+              <p className="text-sm text-slate-800 dark:text-slate-200">
                 {lead.traffic_source || "—"}
               </p>
             </div>
             <div>
-              <p className="text-xs font-medium text-slate-500 mb-1">Канал</p>
-              <p className="text-sm text-slate-800">
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Канал</p>
+              <p className="text-sm text-slate-800 dark:text-slate-200">
                 {lead.messenger || "—"}
               </p>
             </div>
             <div>
-              <p className="text-xs font-medium text-slate-500 mb-1">
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
                 Дилерский центр
               </p>
-              <p className="text-sm text-slate-800">
+              <p className="text-sm text-slate-800 dark:text-slate-200">
                 {lead.dealer_center || "—"}
               </p>
             </div>
             <div className="sm:col-span-2">
-              <p className="text-xs font-medium text-slate-500 mb-1">Резюме</p>
-              <p className="text-sm text-slate-800 whitespace-pre-wrap">
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Резюме</p>
+              <p className="text-sm text-slate-800 dark:text-slate-200 whitespace-pre-wrap">
                 {lead.summary_dialog || "—"}
               </p>
             </div>
             {lead.dialog_link && (
               <div className="sm:col-span-2">
-                <p className="text-xs font-medium text-slate-500 mb-1">
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
                   Ссылка на диалог / CRM
                 </p>
                 <a
@@ -116,18 +116,18 @@ const LeadModal = ({ lead, onClose }) => {
             {(lead.source_system || lead.platform_user_id) && (
               <div className="sm:col-span-2 grid gap-3 sm:grid-cols-2">
                 <div>
-                  <p className="text-xs font-medium text-slate-500 mb-1">
+                  <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
                     Система-источник
                   </p>
-                  <p className="text-sm text-slate-800">
+                  <p className="text-sm text-slate-800 dark:text-slate-200">
                     {lead.source_system || "—"}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-slate-500 mb-1">
+                  <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
                     ID в платформе
                   </p>
-                  <p className="text-sm text-slate-800">
+                  <p className="text-sm text-slate-800 dark:text-slate-200">
                     {lead.platform_user_id || "—"}
                   </p>
                 </div>
@@ -136,11 +136,11 @@ const LeadModal = ({ lead, onClose }) => {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-6 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-6 py-3 dark:border-slate-700">
           <div className="flex gap-2" />
           <button
             onClick={onClose}
-            className="text-xs text-slate-500 hover:text-slate-700"
+            className="text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
           >
             Закрыть окно
           </button>

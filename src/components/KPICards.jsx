@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { format } from "date-fns";
 
 function formatDateTime(value) {
@@ -41,69 +41,52 @@ const KPICards = ({ kpi, loading }) => {
     return Math.round(delta);
   };
 
-  const kpiWithDelta = {
-    total: {
-      value: total_leads ?? 0,
-      prev: total_leads_prev,
-      delta: calcDelta(total_leads, total_leads_prev),
-      label: "Всего лидов",
-      hint: "Количество записей с учетом фильтров"
-    },
-    conversion: {
-      value: conversion ?? "—",
-      prev: conversion_prev,
-      delta: calcDelta(conversion, conversion_prev),
-      label: "Конверсия",
-      hint: "Доля лидов с качеством выше низкого"
-    },
-    highPotential: {
-      value: high_potential_pct ?? "—",
-      prev: high_potential_pct_prev,
-      delta: calcDelta(high_potential_pct, high_potential_pct_prev),
-      label: "Высокий потенциал",
-      hint: "Процент лидов с качеством «высокий»"
-    },
-    qualityLeads: {
-      value: quality_leads ?? 0,
-      prev: quality_leads_prev,
-      delta: calcDelta(quality_leads, quality_leads_prev),
-      label: "Качественные лиды",
-      hint: "Всего лидов с качеством высокий/хороший"
-    }
-  };
-
-  const cards = [
-    {
-      label: kpiWithDelta.total.label,
-      value: kpiWithDelta.total.value,
-      delta: kpiWithDelta.total.delta,
-      hint: kpiWithDelta.total.hint
-    },
-    {
-      label: kpiWithDelta.conversion.label,
-      value: kpiWithDelta.conversion.value,
-      delta: kpiWithDelta.conversion.delta,
-      hint: kpiWithDelta.conversion.hint
-    },
-    {
-      label: kpiWithDelta.highPotential.label,
-      value: kpiWithDelta.highPotential.value,
-      delta: kpiWithDelta.highPotential.delta,
-      hint: kpiWithDelta.highPotential.hint
-    },
-    {
-      label: kpiWithDelta.qualityLeads.label,
-      value: kpiWithDelta.qualityLeads.value,
-      delta: kpiWithDelta.qualityLeads.delta,
-      hint: kpiWithDelta.qualityLeads.hint
-    },
-    {
-      label: "Последний лид",
-      value: last_lead_name || "—",
-      extra: last_lead_datetime ? formatDateTime(last_lead_datetime) : "",
-      hint: "Имя и время последнего лида"
-    }
-  ];
+  const cards = useMemo(
+    () => [
+      {
+        label: "Всего лидов",
+        value: total_leads ?? 0,
+        delta: calcDelta(total_leads, total_leads_prev),
+        hint: "Количество записей с учетом фильтров"
+      },
+      {
+        label: "Конверсия",
+        value: conversion ?? "—",
+        delta: calcDelta(conversion, conversion_prev),
+        hint: "Доля лидов с качеством выше низкого"
+      },
+      {
+        label: "Высокий потенциал",
+        value: high_potential_pct ?? "—",
+        delta: calcDelta(high_potential_pct, high_potential_pct_prev),
+        hint: "Процент лидов с качеством «высокий»"
+      },
+      {
+        label: "Качественные лиды",
+        value: quality_leads ?? 0,
+        delta: calcDelta(quality_leads, quality_leads_prev),
+        hint: "Всего лидов с качеством высокий/хороший"
+      },
+      {
+        label: "Последний лид",
+        value: last_lead_name || "—",
+        extra: last_lead_datetime ? formatDateTime(last_lead_datetime) : "",
+        hint: "Имя и время последнего лида"
+      }
+    ],
+    [
+      total_leads,
+      total_leads_prev,
+      conversion,
+      conversion_prev,
+      high_potential_pct,
+      high_potential_pct_prev,
+      quality_leads,
+      quality_leads_prev,
+      last_lead_name,
+      last_lead_datetime
+    ]
+  );
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 mb-6">
@@ -113,10 +96,10 @@ const KPICards = ({ kpi, loading }) => {
         const isPositive = hasDelta && delta > 0;
         const isNegative = hasDelta && delta < 0;
         const deltaColor = isPositive
-          ? "text-emerald-600"
+          ? "text-emerald-600 dark:text-emerald-400"
           : isNegative
-          ? "text-rose-600"
-          : "text-slate-400";
+          ? "text-rose-600 dark:text-rose-400"
+          : "text-slate-400 dark:text-slate-500";
 
         return (
           <div key={card.label} className="card p-4">

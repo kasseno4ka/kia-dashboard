@@ -12,7 +12,7 @@ body {
 }
 
 .card-header {
-  @apply text-sm font-medium text-slate-500;
+  @apply text-sm font-medium text-slate-500 dark:text-slate-400;
 }
 
 .card-value {
@@ -24,19 +24,19 @@ body {
 }
 
 .badge-high {
-  @apply bg-emerald-50 text-emerald-700;
+  @apply bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300;
 }
 
 .badge-good {
-  @apply bg-sky-50 text-sky-700;
+  @apply bg-sky-50 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300;
 }
 
 .badge-medium {
-  @apply bg-amber-50 text-amber-700;
+  @apply bg-amber-50 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300;
 }
 
 .badge-low {
-  @apply bg-rose-50 text-rose-700;
+  @apply bg-rose-50 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300;
 }
 
 .table-header {
