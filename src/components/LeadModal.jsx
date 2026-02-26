@@ -19,14 +19,42 @@ function formatDateTime(value) {
   }
 }
 
+function parseFullDialog(fullDialog) {
+  if (!fullDialog) return [];
+
+  const normalized = String(fullDialog).replace(/\r\n/g, "\n");
+  const pattern = /(\d{2}\.\d{2}\.\d{2}\s+\d{2}-\d{2})\s+\[([^\]]+)\]:\s*([\s\S]*?)(?=(?:\n\d{2}\.\d{2}\.\d{2}\s+\d{2}-\d{2}\s+\[[^\]]+\]:)|$)/g;
+
+  const messages = [];
+  let match;
+
+  while ((match = pattern.exec(normalized)) !== null) {
+    const datetime = (match[1] || "").trim();
+    const sender = (match[2] || "").trim();
+    const text = (match[3] || "").trim();
+
+    messages.push({ datetime, sender, text });
+  }
+
+  return messages;
+}
+
+function formatDialogTime(datetime) {
+  const match = datetime?.match(/(\d{2})-(\d{2})$/);
+  if (!match) return "";
+  return `${match[1]}:${match[2]}`;
+}
+
+function isCompanySender(sender) {
+  const normalized = (sender || "").toLowerCase();
+  return normalized.includes("kia qazaqstan") || normalized.startsWith("kia");
+}
+
 const LeadModal = ({ lead, onClose }) => {
   if (!lead) return null;
 
-  // Вся витрина (таблица, экспорт, модалка) работает с одним DTO:
-  // name, selected_car, client_quality_bucket, client_quality, datetime, city,
-  // traffic_source, messenger, dealer_center, dialog_link, summary_dialog,
-  // source_system, platform_user_id и т.д.
-  // Поэтому здесь используем те же поля, что и в таблице/экспорте.
+  const fullDialogMessages = parseFullDialog(lead.full_dialog);
+
   const qualityClass =
     QUALITY_LABEL_CLASS[lead.client_quality_bucket] ||
     "badge bg-slate-100 text-slate-700";
@@ -98,6 +126,7 @@ const LeadModal = ({ lead, onClose }) => {
                 {lead.summary_dialog || "—"}
               </p>
             </div>
+
             {lead.dialog_link && (
               <div className="sm:col-span-2">
                 <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
@@ -134,6 +163,58 @@ const LeadModal = ({ lead, onClose }) => {
               </div>
             )}
           </div>
+
+          {lead.full_dialog && (
+            <details className="rounded-md border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-900/50">
+              <summary className="cursor-pointer text-xs font-medium text-slate-600 dark:text-slate-300">
+                Полный диалог
+              </summary>
+              <div className="mt-3 max-h-80 overflow-y-auto rounded-md border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-800">
+                <div className="space-y-2.5">
+                  {fullDialogMessages.length > 0 ? (
+                    fullDialogMessages.map((message, index) => {
+                      const outgoing = isCompanySender(message.sender);
+
+                      return (
+                        <div
+                          key={`${message.datetime}-${message.sender}-${index}`}
+                          className={`flex ${outgoing ? "justify-end" : "justify-start"}`}
+                        >
+                          <div
+                            className={`max-w-[82%] rounded-2xl px-3 py-2 text-sm shadow-sm ${
+                              outgoing
+                                ? "bg-sky-100 text-sky-900 dark:bg-sky-900/40 dark:text-sky-100"
+                                : "bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-100"
+                            }`}
+                          >
+                            {!outgoing && (
+                              <p className="mb-1 text-[11px] font-medium text-slate-500 dark:text-slate-300">
+                                {message.sender}
+                              </p>
+                            )}
+                            <p className="whitespace-pre-wrap">{message.text}</p>
+                            <p
+                              className={`mt-1 text-right text-[10px] ${
+                                outgoing
+                                  ? "text-sky-700 dark:text-sky-200"
+                                  : "text-slate-500 dark:text-slate-300"
+                              }`}
+                            >
+                              {formatDialogTime(message.datetime)}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <p className="text-sm text-slate-700 dark:text-slate-200 whitespace-pre-wrap">
+                      {lead.full_dialog}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </details>
+          )}
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-6 py-3 dark:border-slate-700">
@@ -151,4 +232,3 @@ const LeadModal = ({ lead, onClose }) => {
 };
 
 export default LeadModal;
-
