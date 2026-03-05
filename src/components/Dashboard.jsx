@@ -12,7 +12,15 @@ const Dashboard = () => {
   const [aggregations, setAggregations] = useState(null);
   const [limit, setLimit] = useState(10);
   const [offset, setOffset] = useState(0);
-  const { filters, setFilters } = useDashboardFilters();
+  const {
+    filters,
+    setFilters,
+    startDate,
+    endDate,
+    setStartDate,
+    setEndDate,
+    resetDateFilters
+  } = useDashboardFilters();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [selectedLead, setSelectedLead] = useState(null);
@@ -31,7 +39,11 @@ const Dashboard = () => {
       while (true) {
         const data = await fetchLeads({
           limit: pageLimit,
-          offset: pageOffset
+          offset: pageOffset,
+          startDate,
+          endDate,
+          from: startDate ? `${startDate}T00:00:00` : "",
+          to: endDate ? `${endDate}T23:59:59` : ""
         });
 
         if (!resolvedAggregations && data.aggregations) {
@@ -64,7 +76,7 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, [addToast]);
+  }, [addToast, startDate, endDate]);
 
   useEffect(() => {
     loadData();
@@ -84,6 +96,21 @@ const Dashboard = () => {
     setOffset(0);
   }, [setFilters]);
 
+  const handleStartDateChange = useCallback((event) => {
+    setStartDate(event.target.value || "");
+    setOffset(0);
+  }, [setStartDate]);
+
+  const handleEndDateChange = useCallback((event) => {
+    setEndDate(event.target.value || "");
+    setOffset(0);
+  }, [setEndDate]);
+
+  const handleResetDateFilter = useCallback(() => {
+    resetDateFilters();
+    setOffset(0);
+  }, [resetDateFilters]);
+
   const handleViewLead = useCallback((lead) => {
     setSelectedLead(lead);
   }, []);
@@ -99,6 +126,40 @@ const Dashboard = () => {
           {error}
         </div>
       )}
+
+      <div className="flex flex-wrap gap-4 items-center mb-6 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+        <div className="flex flex-col">
+          <label className="mb-1 text-xs font-medium text-gray-600">Дата начала</label>
+          <input
+            type="date"
+            value={startDate}
+            onChange={handleStartDateChange}
+            max={endDate || undefined}
+            className="h-11 min-w-[180px] rounded-xl border border-gray-200 bg-white px-3 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        <div className="flex flex-col">
+          <label className="mb-1 text-xs font-medium text-gray-600">Дата окончания</label>
+          <input
+            type="date"
+            value={endDate}
+            onChange={handleEndDateChange}
+            min={startDate || undefined}
+            className="h-11 min-w-[180px] rounded-xl border border-gray-200 bg-white px-3 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        {(startDate || endDate) && (
+          <button
+            type="button"
+            onClick={handleResetDateFilter}
+            className="mt-6 h-11 rounded-xl border border-gray-200 bg-white px-4 text-sm font-medium text-gray-700 transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            Сбросить фильтр
+          </button>
+        )}
+      </div>
 
       {loading && leads.length === 0 ? (
         <div className="space-y-4">

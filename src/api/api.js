@@ -27,6 +27,8 @@ export async function fetchLeads({
   offset = 0,
   quality = "all",
   search = "",
+  startDate,
+  endDate,
   from,
   to,
   model = "all",
@@ -45,11 +47,22 @@ export async function fetchLeads({
     source
   };
 
-  if (from) {
-    params.from = from;
+  const resolvedStartDate = startDate || (from ? String(from).slice(0, 10) : "");
+  const resolvedEndDate = endDate || (to ? String(to).slice(0, 10) : "");
+  const resolvedFrom = from || (startDate ? `${startDate}T00:00:00` : "");
+  const resolvedTo = to || (endDate ? `${endDate}T23:59:59` : "");
+
+  if (resolvedStartDate) {
+    params.startDate = resolvedStartDate;
   }
-  if (to) {
-    params.to = to;
+  if (resolvedEndDate) {
+    params.endDate = resolvedEndDate;
+  }
+  if (resolvedFrom) {
+    params.from = resolvedFrom;
+  }
+  if (resolvedTo) {
+    params.to = resolvedTo;
   }
 
   const key = makeKey(params);
