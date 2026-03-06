@@ -1,5 +1,17 @@
 import React from "react";
-import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
+import {
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  BarChart,
+  Bar,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  LabelList,
+} from "recharts";
 
 const CHART_COLORS = ["#2563eb", "#10b981", "#ff6b57", "#f59e0b", "#7c3aed"];
 const OTHERS_COLOR = "#d1d5db";
@@ -234,7 +246,105 @@ const KeyMetricsCard = () => (
   </div>
 );
 
-const Charts = ({ aggregations, loading }) => {
+const QualityDynamicsLegend = () => (
+  <div className="mt-4 flex items-center justify-center gap-6 text-sm text-slate-600">
+    <div className="flex items-center gap-2">
+      <span className="h-2.5 w-2.5 rounded-full bg-green-500" />
+      <span>Высокое</span>
+    </div>
+    <div className="flex items-center gap-2">
+      <span className="h-2.5 w-2.5 rounded-full bg-yellow-400" />
+      <span>Среднее</span>
+    </div>
+    <div className="flex items-center gap-2">
+      <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
+      <span>Низкое</span>
+    </div>
+  </div>
+);
+
+const renderTotalLabel = (props) => {
+  const { x, y, width, payload } = props;
+  if (!payload?.total && payload?.total !== 0) return null;
+
+  return (
+    <text
+      x={x + width / 2}
+      y={y - 8}
+      textAnchor="middle"
+      fill="#0f172a"
+      style={{ fontSize: 12, fontWeight: 600 }}
+    >
+      {payload.total}
+    </text>
+  );
+};
+
+const StackedQualityChartCard = ({ data, loading }) => {
+  const chartData = (data || []).map((item) => ({
+    ...item,
+    total:
+      item.total ??
+      (item.high ?? 0) + (item.medium ?? 0) + (item.low ?? 0),
+  }));
+
+  const hasData = chartData.length > 0;
+
+  return (
+    <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+      <h2 className="mb-4 text-left text-lg font-semibold text-slate-900">
+        Динамика качества лидов по дням
+      </h2>
+
+      <div className="h-80 w-full">
+        {hasData ? (
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData} margin={{ top: 24, right: 12, left: 8, bottom: 14 }} barGap={8}>
+              <CartesianGrid stroke="#e2e8f0" strokeDasharray="3 3" vertical={false} />
+              <XAxis
+                dataKey="date"
+                tick={{ fontSize: 12, fill: "#64748b" }}
+                axisLine={{ stroke: "#cbd5e1" }}
+                tickLine={{ stroke: "#cbd5e1" }}
+              />
+              <YAxis
+                tick={{ fontSize: 12, fill: "#64748b" }}
+                axisLine={{ stroke: "#cbd5e1" }}
+                tickLine={{ stroke: "#cbd5e1" }}
+                label={{
+                  value: "Количество лидов",
+                  angle: -90,
+                  position: "insideLeft",
+                  offset: 0,
+                  style: { textAnchor: "middle", fill: "#334155", fontSize: 12 },
+                }}
+                domain={[0, (dataMax) => Math.max(100, dataMax + 10)]}
+                allowDecimals={false}
+              />
+              <Tooltip
+                cursor={{ fill: "rgba(148, 163, 184, 0.12)" }}
+                formatter={(value, name) => [value, name]}
+              />
+              <Bar dataKey="high" name="Высокое" stackId="quality" fill="#22c55e" radius={[0, 0, 6, 6]} />
+              <Bar dataKey="medium" name="Среднее" stackId="quality" fill="#facc15" />
+              <Bar dataKey="low" name="Низкое" stackId="quality" fill="#ef4444" radius={[6, 6, 0, 0]}>
+                <LabelList dataKey="total" content={renderTotalLabel} />
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="flex h-full items-center justify-center text-sm text-slate-500">
+            {loading ? "Загрузка данных..." : "Нет данных за выбранный период"}
+          </div>
+        )}
+      </div>
+
+      {hasData ? <QualityDynamicsLegend /> : null}
+    </div>
+  );
+};
+
+const Charts = ({ aggregations, loading, leadsQualityDynamics }) => {
   if (!aggregations && !loading) return null;
 
   const byModel = toTopFiveWithOthers(aggregations?.by_model || [], "model", "count");
@@ -266,6 +376,10 @@ const Charts = ({ aggregations, loading }) => {
         heightClass="h-80"
         descriptionLines={QUALITY_DESCRIPTION_LINES}
       />
+
+      <div className="lg:col-span-2">
+        <StackedQualityChartCard data={leadsQualityDynamics} loading={loading} />
+      </div>
 
       <div className="lg:col-span-2">
         <KeyMetricsCard />

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { fetchLeads } from "../api/api";
+import { fetchLeads, getLeadsQualityDynamics } from "../api/api";
 import { useDashboardFilters } from "../hooks/useDashboardFilters";
 import { useToast } from "../contexts/ToastContext";
 import KPICards from "./KPICards";
@@ -10,6 +10,7 @@ import LeadModal from "./LeadModal";
 const Dashboard = () => {
   const [leads, setLeads] = useState([]);
   const [aggregations, setAggregations] = useState(null);
+  const [leadsQualityDynamics, setLeadsQualityDynamics] = useState([]);
   const [limit, setLimit] = useState(10);
   const [offset, setOffset] = useState(0);
   const {
@@ -66,6 +67,16 @@ const Dashboard = () => {
 
       setLeads(allLeads);
       setAggregations(resolvedAggregations);
+
+      const dynamics = await getLeadsQualityDynamics({
+        startDate,
+        endDate,
+        from: startDate ? `${startDate}T00:00:00` : "",
+        to: endDate ? `${endDate}T23:59:59` : "",
+        fallbackLeads: allLeads,
+        dashboardData: { aggregations: resolvedAggregations },
+      });
+      setLeadsQualityDynamics(dynamics);
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error(err);
@@ -73,6 +84,7 @@ const Dashboard = () => {
         "Не удалось загрузить данные. Проверьте REACT_APP_API_URL и доступность Apps Script."
       );
       addToast("Не удалось загрузить данные.", "error");
+      setLeadsQualityDynamics([]);
     } finally {
       setLoading(false);
     }
@@ -183,7 +195,11 @@ const Dashboard = () => {
       ) : (
         <>
           <KPICards kpi={aggregations?.kpi} loading={loading} />
-          <Charts aggregations={aggregations} loading={loading} />
+          <Charts
+            aggregations={aggregations}
+            leadsQualityDynamics={leadsQualityDynamics}
+            loading={loading}
+          />
           <LeadsTable
             leads={leads}
             limit={limit}
